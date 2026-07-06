@@ -122,88 +122,131 @@
 
   updatePreview();
 
-  // ---------- capture: speech recognition ----------
+  // ---------- capture: one-touch voice recording ----------
+  //
+  // Tap the big record button once to start; recognition.continuous = false
+  // means the browser auto-stops as soon as it detects the end of speech
+  // (a pause), which is the most reliable "stop" signal across browsers.
+  // Tapping the button again while recording stops it early. Either way,
+  // whatever transcript we have when the recognizer's 'end' event fires is
+  // immediately classified and saved — no extra taps required.
 
   const micBtn = document.getElementById('mic-btn');
   const micStatusEl = document.getElementById('mic-status');
+  const liveTranscriptEl = document.getElementById('live-transcript');
   const supportHintEl = document.getElementById('speech-support-hint');
+  const manualEntryEl = document.getElementById('manual-entry');
+
+  const confirmationBannerEl = document.getElementById('save-confirmation');
+  const confirmCategoryEl = document.getElementById('confirm-category');
+  const confirmTagEl = document.getElementById('confirm-tag');
+  const confirmDateTimeEl = document.getElementById('confirm-datetime');
+  const confirmTextEl = document.getElementById('confirm-text');
+  const undoBtn = document.getElementById('undo-btn');
 
   const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
   let isRecording = false;
-  let baseTextBeforeRecording = '';
+  let finalTranscript = '';
+  let interimTranscript = '';
+  let lastSavedEntryId = null;
+  let confirmationHideTimer = null;
+
+  function showConfirmation(entry) {
+    lastSavedEntryId = entry.id;
+    confirmCategoryEl.textContent = CATEGORY_LABELS[entry.category];
+    confirmCategoryEl.className = `badge category-badge category-${entry.category}`;
+    confirmTagEl.textContent = TAG_LABELS[entry.tag];
+    confirmTagEl.className = `badge tag-badge tag-${entry.tag}`;
+    confirmDateTimeEl.textContent = entry.reminderDateTime ? `📅 ${entry.reminderDateTime}` : '';
+    confirmTextEl.textContent = entry.text;
+    confirmationBannerEl.hidden = false;
+
+    clearTimeout(confirmationHideTimer);
+    confirmationHideTimer = setTimeout(() => { confirmationBannerEl.hidden = true; }, 8000);
+
+    if (!browseView.hidden) renderEntryList();
+  }
+
+  undoBtn.addEventListener('click', () => {
+    if (!lastSavedEntryId) return;
+    deleteEntry(lastSavedEntryId);
+    lastSavedEntryId = null;
+    clearTimeout(confirmationHideTimer);
+    confirmationBannerEl.hidden = true;
+    if (!browseView.hidden) renderEntryList();
+  });
+
+  function handleCapturedSpeech(rawText) {
+    const text = rawText.trim();
+    if (!text) {
+      micStatusEl.textContent = 'No speech detected — tap to try again.';
+      setTimeout(() => { micStatusEl.textContent = 'Tap to record'; }, 3000);
+      return;
+    }
+    const entry = addEntry(text);
+    showConfirmation(entry);
+    micStatusEl.textContent = 'Tap to record';
+  }
 
   if (!SpeechRecognitionImpl) {
     micBtn.disabled = true;
-    micBtn.textContent = '🎤 Voice input not supported';
+    micStatusEl.textContent = 'Voice input not supported in this browser';
     supportHintEl.textContent =
       'Your browser does not support the Web Speech API (this is common outside Chrome/Edge). Type or paste your log below instead.';
+    manualEntryEl.open = true;
   } else {
     supportHintEl.textContent =
       'Voice input uses your browser\'s built-in speech recognition (Chrome/Edge work best). It needs microphone permission and, outside localhost, an HTTPS page.';
 
     recognition = new SpeechRecognitionImpl();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.addEventListener('result', (event) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      finalTranscript = '';
+      interimTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += transcript;
-        else interim += transcript;
+        if (event.results[i].isFinal) finalTranscript += transcript;
+        else interimTranscript += transcript;
       }
-      const base = baseTextBeforeRecording ? `${baseTextBeforeRecording} ` : '';
-      logTextEl.value = (base + final + interim).trim();
-      if (final) baseTextBeforeRecording = logTextEl.value;
-      updatePreview();
+      liveTranscriptEl.hidden = false;
+      liveTranscriptEl.textContent = `“${(finalTranscript + interimTranscript).trim()}”`;
     });
 
     recognition.addEventListener('error', (event) => {
-      micStatusEl.textContent = `Mic error: ${event.error}`;
-      stopRecording();
+      micStatusEl.textContent = event.error === 'not-allowed'
+        ? 'Microphone permission denied.'
+        : `Mic error: ${event.error}`;
     });
 
     recognition.addEventListener('end', () => {
-      if (isRecording) {
-        // Some browsers stop automatically after a pause; restart if the
-        // user hasn't explicitly clicked "stop" yet.
-        try { recognition.start(); } catch (err) { stopRecording(); }
-      }
+      isRecording = false;
+      micBtn.classList.remove('recording');
+      liveTranscriptEl.hidden = true;
+      handleCapturedSpeech(finalTranscript || interimTranscript);
     });
-  }
 
-  function startRecording() {
-    if (!recognition) return;
-    baseTextBeforeRecording = logTextEl.value.trim();
-    try {
-      recognition.start();
-    } catch (err) {
-      micStatusEl.textContent = 'Could not start microphone.';
-      return;
-    }
-    isRecording = true;
-    micBtn.textContent = '⏹ Stop recording';
-    micBtn.classList.add('recording');
-    micStatusEl.textContent = 'Listening…';
-  }
-
-  function stopRecording() {
-    isRecording = false;
-    if (recognition) {
-      try { recognition.stop(); } catch (err) { /* already stopped */ }
-    }
-    micBtn.textContent = '🎤 Start recording';
-    micBtn.classList.remove('recording');
-    micStatusEl.textContent = '';
-  }
-
-  if (recognition) {
     micBtn.addEventListener('click', () => {
-      if (isRecording) stopRecording();
-      else startRecording();
+      if (isRecording) {
+        // Manual early stop — this also triggers the 'end' handler above.
+        try { recognition.stop(); } catch (err) { /* already stopped */ }
+        return;
+      }
+      finalTranscript = '';
+      interimTranscript = '';
+      confirmationBannerEl.hidden = true;
+      try {
+        recognition.start();
+      } catch (err) {
+        micStatusEl.textContent = 'Could not start microphone.';
+        return;
+      }
+      isRecording = true;
+      micBtn.classList.add('recording');
+      micStatusEl.textContent = 'Listening…';
     });
   }
 

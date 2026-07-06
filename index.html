@@ -23,26 +23,46 @@
 
   <section class="panel" id="capture-view">
     <h2>New log</h2>
-    <div class="capture-controls">
-      <button type="button" id="mic-btn" class="mic-btn">🎤 Start recording</button>
-      <span class="status" id="mic-status"></span>
+
+    <div class="record-zone">
+      <button type="button" id="mic-btn" class="record-btn" aria-label="Tap to record a voice log">
+        <span class="record-icon" aria-hidden="true">🎤</span>
+      </button>
+      <p class="record-state" id="mic-status">Tap to record</p>
+      <p class="live-transcript" id="live-transcript" hidden></p>
     </div>
+
+    <div class="confirmation-banner" id="save-confirmation" hidden>
+      <div class="confirmation-top">
+        <span class="preview-label">Saved:</span>
+        <span class="badge category-badge" id="confirm-category"></span>
+        <span class="badge tag-badge" id="confirm-tag"></span>
+        <span class="preview-datetime" id="confirm-datetime"></span>
+      </div>
+      <p class="entry-text" id="confirm-text"></p>
+      <button type="button" id="undo-btn" class="link-btn">Undo</button>
+    </div>
+
     <p class="hint" id="speech-support-hint"></p>
 
-    <div class="field">
-      <label for="log-text">Log text <span class="hint">(auto-filled from speech, or type/paste directly)</span></label>
-      <textarea id="log-text" rows="5" placeholder="e.g. Remind me to send the client report by 5pm tomorrow"></textarea>
-    </div>
+    <details class="manual-entry" id="manual-entry">
+      <summary>Or type/paste a log manually</summary>
 
-    <div class="preview-card" id="preview-card">
-      <span class="preview-label">Will be saved as:</span>
-      <span class="badge category-badge" id="preview-category">Other/organizing</span>
-      <span class="badge tag-badge" id="preview-tag">Personal</span>
-      <span class="preview-datetime" id="preview-datetime"></span>
-    </div>
+      <div class="field">
+        <label for="log-text">Log text</label>
+        <textarea id="log-text" rows="5" placeholder="e.g. Remind me to send the client report by 5pm tomorrow"></textarea>
+      </div>
 
-    <button type="button" id="save-btn">Save log</button>
-    <p class="status" id="save-status"></p>
+      <div class="preview-card" id="preview-card">
+        <span class="preview-label">Will be saved as:</span>
+        <span class="badge category-badge" id="preview-category">Other/organizing</span>
+        <span class="badge tag-badge" id="preview-tag">Personal</span>
+        <span class="preview-datetime" id="preview-datetime"></span>
+      </div>
+
+      <button type="button" id="save-btn">Save log</button>
+      <p class="status" id="save-status"></p>
+    </details>
   </section>
 
   <section class="panel" id="browse-view" hidden>

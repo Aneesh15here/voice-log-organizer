@@ -28,15 +28,24 @@ via `file://`.)
 
 ## Using it
 
-1. **Capture tab**: click **Start recording** and speak, or just type/paste
-   into the text box. As you type (or as speech is recognized), a live
-   preview shows how the log would be classified — category, Work/Personal
-   tag, and any date/time it picked up.
-2. Click **Save log** to store it.
-3. **Browse logs tab**: switch between **Work** and **Personal**, then
+1. **Capture tab**: tap the big round **record button** once and start
+   talking — that's the entire interaction. The button turns green and
+   pulses with a "Listening…" label while it's capturing, with a live
+   preview of the transcript underneath. It's one tap total: no separate
+   "stop" step to remember.
+2. Recording stops automatically as soon as the recognizer detects you've
+   finished speaking (a short pause), or you can tap the button again to
+   stop early. Either way, the transcript is immediately classified and
+   **saved automatically** — a brief inline confirmation shows the saved
+   text plus its assigned category/tag/date-time badges, with an **Undo**
+   link if it saved something you didn't mean to keep.
+3. Prefer typing? Expand **"Or type/paste a log manually"** for a text box
+   with the same live classification preview and an explicit **Save log**
+   button — a full substitute for voice, not just a fallback.
+4. **Browse logs tab**: switch between **Work** and **Personal**, then
    filter by **All / Diary log / Reminders / Other-organizing**. When
    viewing Reminders, you can sort by upcoming date or newest first.
-4. Every saved entry has its own **Category** and **Tag** dropdowns and a
+5. Every saved entry has its own **Category** and **Tag** dropdowns and a
    **Delete** button, so you can correct the auto-classification any time —
    the heuristics won't always get it right.
 
@@ -94,6 +103,18 @@ overridden after the fact in the Browse view.
 
 ## Assumptions & notes
 
+- **One tap = one log**: the record button captures a single utterance and
+  auto-stops on the first detected pause (`recognition.continuous = false`),
+  which is the most reliable cross-browser "end of speech" signal. This
+  means a long pause mid-sentence can end the recording early — if that
+  happens, just tap the button again to record a follow-up log (or use the
+  manual text box to combine/edit). This was a deliberate simplicity
+  trade-off for a true one-touch flow over a stricter "keep listening no
+  matter what" mode.
+- **Auto-save confirmation window**: the inline "Saved: ..." banner (with
+  its **Undo** link) auto-dismisses after 8 seconds. After that, removing
+  or correcting an entry means using the Delete/Category/Tag controls in
+  the Browse logs tab instead.
 - **No transcription cleanup**: whatever the Web Speech API returns (or
   whatever you type) is classified and stored as-is — no spelling
   correction or punctuation normalization is applied.
