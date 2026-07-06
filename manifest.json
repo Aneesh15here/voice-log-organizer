@@ -1,0 +1,12 @@
+{
+  "name": "Voice Log Organizer",
+  "short_name": "VoiceLogs",
+  "description": "Speak or type quick logs and get them auto-sorted into diary entries, reminders, or notes, tagged Work or Personal.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f9",
+  "theme_color": "#0b3d5c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

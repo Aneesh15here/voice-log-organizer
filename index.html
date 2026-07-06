@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Log Organizer</title>
+<meta name="theme-color" content="#0b3d5c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>🎙️ Voice Log Organizer</h1>
+  <p class="tagline">Speak or type a quick log — it's auto-sorted into a diary entry, reminder, or note, and tagged Work or Personal.</p>
+</header>
+
+<main>
+  <nav class="view-switch" role="tablist">
+    <button type="button" class="view-tab active" data-view="capture" role="tab" aria-selected="true">Capture</button>
+    <button type="button" class="view-tab" data-view="browse" role="tab" aria-selected="false">Browse logs</button>
+  </nav>
+
+  <section class="panel" id="capture-view">
+    <h2>New log</h2>
+    <div class="capture-controls">
+      <button type="button" id="mic-btn" class="mic-btn">🎤 Start recording</button>
+      <span class="status" id="mic-status"></span>
+    </div>
+    <p class="hint" id="speech-support-hint"></p>
+
+    <div class="field">
+      <label for="log-text">Log text <span class="hint">(auto-filled from speech, or type/paste directly)</span></label>
+      <textarea id="log-text" rows="5" placeholder="e.g. Remind me to send the client report by 5pm tomorrow"></textarea>
+    </div>
+
+    <div class="preview-card" id="preview-card">
+      <span class="preview-label">Will be saved as:</span>
+      <span class="badge category-badge" id="preview-category">Other/organizing</span>
+      <span class="badge tag-badge" id="preview-tag">Personal</span>
+      <span class="preview-datetime" id="preview-datetime"></span>
+    </div>
+
+    <button type="button" id="save-btn">Save log</button>
+    <p class="status" id="save-status"></p>
+  </section>
+
+  <section class="panel" id="browse-view" hidden>
+    <h2>Your logs</h2>
+
+    <div class="tag-tabs">
+      <button type="button" class="tag-tab active" data-tag="work">Work</button>
+      <button type="button" class="tag-tab" data-tag="personal">Personal</button>
+    </div>
+
+    <div class="category-filters">
+      <button type="button" class="cat-filter active" data-category="all">All</button>
+      <button type="button" class="cat-filter" data-category="diary">Diary log</button>
+      <button type="button" class="cat-filter" data-category="reminder">Reminders</button>
+      <button type="button" class="cat-filter" data-category="other">Other/organizing</button>
+    </div>
+
+    <div class="list-controls" id="reminder-sort-controls" hidden>
+      <label>
+        Sort reminders by
+        <select id="reminder-sort">
+          <option value="upcoming">Upcoming date first</option>
+          <option value="newest">Newest first</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="entry-list" id="entry-list"></div>
+    <p class="empty-state" id="empty-state" hidden>No logs here yet.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Runs entirely in your browser — voice input via the Web Speech API, storage via localStorage. No accounts, no server, no API keys.</p>
+</footer>
+
+<script src="classify.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
