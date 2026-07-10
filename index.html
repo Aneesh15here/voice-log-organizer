@@ -24,6 +24,12 @@
   <section class="panel" id="capture-view">
     <h2>New log</h2>
 
+    <div class="daily-reminder-banner" id="daily-reminder-banner" hidden>
+      <span id="daily-reminder-text">⏰ Don't forget to add a log today!</span>
+      <button type="button" id="log-now-btn" class="link-btn">Log now</button>
+      <button type="button" id="dismiss-reminder-btn" class="link-btn">Dismiss</button>
+    </div>
+
     <div class="record-zone">
       <button type="button" id="mic-btn" class="record-btn" aria-label="Tap to record a voice log">
         <span class="record-icon" aria-hidden="true">🎤</span>
@@ -62,6 +68,24 @@
 
       <button type="button" id="save-btn">Save log</button>
       <p class="status" id="save-status"></p>
+    </details>
+
+    <details class="manual-entry" id="reminder-settings">
+      <summary>⏰ Daily log reminder</summary>
+
+      <div class="field">
+        <label class="checkbox-label">
+          <input type="checkbox" id="reminder-toggle">
+          Remind me every day to add a log
+        </label>
+      </div>
+
+      <div class="field" id="reminder-time-field" hidden>
+        <label for="reminder-time">Reminder time</label>
+        <input type="time" id="reminder-time" value="20:00">
+      </div>
+
+      <p class="hint" id="reminder-hint"></p>
     </details>
   </section>
 

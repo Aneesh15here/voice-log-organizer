@@ -186,6 +186,37 @@ main {
 }
 .manual-entry[open] summary { margin-bottom: 0.75rem; }
 
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"] { width: 1.05rem; height: 1.05rem; }
+
+#reminder-time-field input[type="time"] {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.daily-reminder-banner {
+  background: #fffaf0;
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.daily-reminder-banner:not([hidden]) { display: flex; }
+.daily-reminder-banner #daily-reminder-text { font-weight: 600; color: #8a5c00; }
+
 button[type="submit"], #save-btn {
   background: var(--navy);
   color: white;

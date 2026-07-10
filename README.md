@@ -48,6 +48,14 @@ via `file://`.)
 5. Every saved entry has its own **Category** and **Tag** dropdowns and a
    **Delete** button, so you can correct the auto-classification any time —
    the heuristics won't always get it right.
+6. **⏰ Daily log reminder** (in the Capture tab, below the manual entry
+   box): turn it on and pick a time, and once that time passes each day the
+   app shows an in-app "Don't forget to add a log today!" banner (with a
+   **Log now** shortcut that jumps to the record button, and a **Dismiss**
+   that clears it for the rest of that day) — as long as you haven't logged
+   anything yet that day. If your browser grants notification permission,
+   you'll also get a real browser notification. See the limitation noted
+   below — this only works while a browser is actually open/running.
 
 ## Browser support for voice input
 
@@ -103,6 +111,20 @@ overridden after the fact in the Browse view.
 
 ## Assumptions & notes
 
+- **Daily reminder has no backend, so it only works while a browser is
+  open**: this app is 100% static/client-side with no server and no push
+  subscription, so "every day" is implemented as a check that runs on page
+  load and every 30 seconds while the app is open, comparing the current
+  time to your saved reminder time. It will **not** fire after the
+  browser/tab has been fully closed for the day — a true "notify me even
+  if nothing is running" reminder would require a server-backed Web Push
+  subscription, which is out of scope for a no-backend static app. In
+  practice this means: if you keep a tab open (or the PWA installed and
+  running), you'll get a real notification at the set time; otherwise,
+  you'll get the in-app banner the next time you open the app that day.
+- **"Logged today" check**: the reminder considers itself satisfied once
+  *any* log (any category or tag) has been saved that calendar day, using
+  the browser's local date/time.
 - **One tap = one log**: the record button captures a single utterance and
   auto-stops on the first detected pause (`recognition.continuous = false`),
   which is the most reliable cross-browser "end of speech" signal. This

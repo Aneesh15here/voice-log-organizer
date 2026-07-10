@@ -4,6 +4,7 @@
   const { CATEGORY, TAG, classifyLog } = window.VoiceLogClassifier;
 
   const STORAGE_KEY = 'voiceLogOrganizer.entries.v1';
+  const REMINDER_SETTINGS_KEY = 'voiceLogOrganizer.dailyReminder.v1';
 
   const CATEGORY_LABELS = {
     [CATEGORY.DIARY]: 'Diary log',
@@ -26,6 +27,13 @@
 
   function saveEntries(entries) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function localDateStr(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   let entries = loadEntries();
@@ -118,6 +126,7 @@
     saveStatusEl.textContent =
       `Saved as ${CATEGORY_LABELS[entry.category]} · ${TAG_LABELS[entry.tag]}.`;
     setTimeout(() => { saveStatusEl.textContent = ''; }, 4000);
+    checkDailyReminder();
   });
 
   updatePreview();
@@ -187,6 +196,7 @@
     const entry = addEntry(text);
     showConfirmation(entry);
     micStatusEl.textContent = 'Tap to record';
+    checkDailyReminder();
   }
 
   if (!SpeechRecognitionImpl) {
@@ -249,6 +259,135 @@
       micStatusEl.textContent = 'Listening…';
     });
   }
+
+  // ---------- daily log reminder ----------
+  //
+  // There's no backend/push server here, so "every day" only works while a
+  // browser is actually running: a periodic check (every 30s) plus a check
+  // on page load compares the current time against the saved reminder time
+  // and, if nothing has been logged yet today, shows an in-app banner and
+  // (if permission was granted) a real browser Notification. This won't
+  // fire after the browser/tab has been fully closed for the day — that
+  // would require a server-backed push subscription, which is out of scope
+  // for a no-backend static app.
+
+  function loadReminderSettings() {
+    try {
+      const raw = localStorage.getItem(REMINDER_SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : { enabled: false, time: '20:00', lastNotifiedDate: null, dismissedDate: null };
+    } catch (err) {
+      return { enabled: false, time: '20:00', lastNotifiedDate: null, dismissedDate: null };
+    }
+  }
+
+  function saveReminderSettings(settings) {
+    localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function hasLoggedToday() {
+    const todayStr = localDateStr(new Date());
+    return entries.some((e) => localDateStr(new Date(e.createdAt)) === todayStr);
+  }
+
+  const reminderToggle = document.getElementById('reminder-toggle');
+  const reminderTimeField = document.getElementById('reminder-time-field');
+  const reminderTimeInput = document.getElementById('reminder-time');
+  const reminderHintEl = document.getElementById('reminder-hint');
+  const dailyBannerEl = document.getElementById('daily-reminder-banner');
+  const logNowBtn = document.getElementById('log-now-btn');
+  const dismissReminderBtn = document.getElementById('dismiss-reminder-btn');
+
+  const NOTIF_SUPPORTED = 'Notification' in window;
+
+  function updateReminderHint() {
+    const settings = loadReminderSettings();
+    if (!settings.enabled) {
+      reminderHintEl.textContent = NOTIF_SUPPORTED
+        ? "We'll ask for notification permission when you turn this on. Either way, you'll also see an in-app reminder banner when you open the app after your chosen time (if you haven't logged anything yet that day)."
+        : "Your browser doesn't support notifications, but you'll still see an in-app reminder banner when you open the app after your chosen time.";
+      return;
+    }
+    if (!NOTIF_SUPPORTED) {
+      reminderHintEl.textContent = `Reminder set for ${settings.time}. Your browser doesn't support notifications, so you'll see an in-app banner instead when you open the app after that time.`;
+    } else if (Notification.permission === 'granted') {
+      reminderHintEl.textContent = `Reminder set for ${settings.time}. You'll get a browser notification (while this browser is open) plus an in-app banner.`;
+    } else if (Notification.permission === 'denied') {
+      reminderHintEl.textContent = `Reminder set for ${settings.time}. Notifications are blocked in this browser, so you'll see an in-app banner instead.`;
+    } else {
+      reminderHintEl.textContent = `Reminder set for ${settings.time}. Notification permission not yet granted — you'll see an in-app banner regardless.`;
+    }
+  }
+
+  function checkDailyReminder() {
+    const settings = loadReminderSettings();
+    reminderToggle.checked = settings.enabled;
+    reminderTimeField.hidden = !settings.enabled;
+    reminderTimeInput.value = settings.time;
+
+    if (!settings.enabled) {
+      dailyBannerEl.hidden = true;
+      return;
+    }
+
+    const now = new Date();
+    const todayStr = localDateStr(now);
+    const [h, m] = settings.time.split(':').map(Number);
+    const reminderMoment = new Date(now);
+    reminderMoment.setHours(h, m, 0, 0);
+
+    const due = now >= reminderMoment && !hasLoggedToday();
+    const dismissedToday = settings.dismissedDate === todayStr;
+
+    dailyBannerEl.hidden = !due || dismissedToday;
+
+    if (due && NOTIF_SUPPORTED && Notification.permission === 'granted' && settings.lastNotifiedDate !== todayStr) {
+      new Notification('Voice Log Organizer', { body: "Don't forget to add today's log!", icon: 'icon.svg' });
+      settings.lastNotifiedDate = todayStr;
+      saveReminderSettings(settings);
+    }
+  }
+
+  reminderToggle.addEventListener('change', () => {
+    const settings = loadReminderSettings();
+    settings.enabled = reminderToggle.checked;
+    saveReminderSettings(settings);
+
+    if (settings.enabled && NOTIF_SUPPORTED && Notification.permission === 'default') {
+      Notification.requestPermission().then(() => {
+        updateReminderHint();
+        checkDailyReminder();
+      });
+    }
+    updateReminderHint();
+    checkDailyReminder();
+  });
+
+  reminderTimeInput.addEventListener('change', () => {
+    const settings = loadReminderSettings();
+    settings.time = reminderTimeInput.value || '20:00';
+    // A new time today means today's notification/dismissal state should reset.
+    settings.lastNotifiedDate = null;
+    settings.dismissedDate = null;
+    saveReminderSettings(settings);
+    updateReminderHint();
+    checkDailyReminder();
+  });
+
+  dismissReminderBtn.addEventListener('click', () => {
+    const settings = loadReminderSettings();
+    settings.dismissedDate = localDateStr(new Date());
+    saveReminderSettings(settings);
+    dailyBannerEl.hidden = true;
+  });
+
+  logNowBtn.addEventListener('click', () => {
+    dailyBannerEl.hidden = true;
+    micBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  updateReminderHint();
+  checkDailyReminder();
+  setInterval(checkDailyReminder, 30000);
 
   // ---------- browse: filters + rendering ----------
 
